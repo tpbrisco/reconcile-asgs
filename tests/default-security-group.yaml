@@ -1,0 +1,6 @@
+- name: default_security_group
+  rules:
+    - destination: "0.0.0.0/0"
+      protocol: "all"
+    - destination: "169.255.0.0-255.255.255.255"
+      protocol: "all"

@@ -1,0 +1,6 @@
+- name: test-1-group-2
+  rules:
+    - destination: "192.168.14.0/24"
+      log: true
+      ports: "80, 99"
+      protocol: "udp"

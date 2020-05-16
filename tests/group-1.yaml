@@ -1,0 +1,17 @@
+
+- name: test-1-group-1
+  rules:
+    - destination: "192.168.10.0/24"
+      log: false
+      ports: "80, 443"
+      protocol: "tcp"
+    - destination: "192.168.12.0/24"
+      log: true
+      ports: "23, 445"
+      protocol: "tcp"
+- name: test-2-group-1
+  rules:
+    - destination: "192.168.13.0/24"
+      log: false
+      ports: "99"
+      protocol: "tcp"
