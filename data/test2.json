@@ -1,0 +1,9 @@
+[
+  {
+    "destination": "192.168.10.0/24",
+    "log": true,
+    "ports": "80",
+    "protocol": "tcp"
+  }
+]
+  
