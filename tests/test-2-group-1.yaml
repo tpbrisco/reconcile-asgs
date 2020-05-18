@@ -1,0 +1,6 @@
+policy_name: test-2-group-1
+rules:
+  - destination: "192.168.13.0/24"
+    log: false
+    ports: "99"
+    protocol: "tcp"

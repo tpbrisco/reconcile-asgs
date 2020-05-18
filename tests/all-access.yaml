@@ -1,4 +1,4 @@
-- name: all_access
-  rules:
-    - destination: "0.0.0.0/0"
-      protocol: "all"
+policy_name: all_access
+rules:
+  - destination: "0.0.0.0/0"
+    protocol: "all"

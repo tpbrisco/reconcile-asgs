@@ -107,17 +107,14 @@ allowed_asgs = list()
 
 
 def add_file(filename):
-    '''read a <group>.json file for allowed security group'''
-    new_sg_list = list()
-    sg_return = list()
+    '''read a <group>.json file for allowed security group.
+    One security group per file.'''
     with open(filename, 'r') as f:
-        new_sg_list = yaml.safe_load(f)
+        new_sg = yaml.safe_load(f)
     # validate contents - we need a name
-    for asg in new_sg_list:
-        if 'name' not in asg:
-            raise ASGException('no \'name\' specified in file %s' % (filename))
-        sg_return.append(asg['name'])
-    return sg_return
+    if 'policy_name' not in new_sg:
+        raise ASGException('no policy_name specified in file %s' % (filename))
+    return new_sg['policy_name']
 
 
 # get list of security groups configured from command line
@@ -138,7 +135,7 @@ args = parser.parse_args()
 start = time.time()
 configured_list = list()
 for file in args.file:
-    configured_list = configured_list + add_file(file)
+    configured_list.append(add_file(file))
 end = time.time()
 if args.debug:
     print("valid_asgs (%.02fsec): %s" % (
