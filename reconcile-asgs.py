@@ -94,8 +94,17 @@ def add_file(filename):
 
 
 # get list of security groups configured from command line
-parser = argparse.ArgumentParser()
-parser.add_argument('file', nargs='*')
+parser = argparse.ArgumentParser(prog='reconcile-ags',
+                                 description='reconcile ASGs against inventory')
+parser.add_argument('-d', '--delete',
+                    action='store_true',
+                    default=False,
+                    help='delete incorrect security groups')
+parser.add_argument('-D', '--debug',
+                    action='store_true',
+                    default=False,
+                    help='enable debugging messages')
+parser.add_argument('file', nargs='*', help='list of files')
 args = parser.parse_args()
 
 # read in ASG configuration file the list of files
@@ -104,8 +113,9 @@ configured_list = list()
 for file in args.file:
     configured_list = configured_list + add_file(file)
 end = time.time()
-print("valid_asgs (%.02fsec): %s" % (
-    (end - start), json.dumps(configured_list, indent=2)))
+if args.debug:
+    print("valid_asgs (%.02fsec): %s" % (
+        (end - start), json.dumps(configured_list, indent=2)))
 
 
 # read in ASG from the live environment
@@ -116,12 +126,16 @@ auth_refresh = cf_refresh(config)
 headers = {'Authorization': auth_refresh['token_type'] + ' ' + auth_refresh['access_token']}
 actual_list = get_sgs(config['Target'], headers)
 end = time.time()
-print("actual_asgs (%.02fsec): %s" % (
-    (end - start), json.dumps(actual_list, indent=2)))
+if args.debug:
+    print("actual_asgs (%.02fsec): %s" % (
+        (end - start), json.dumps(actual_list, indent=2)))
 
 # compute the "diff" between the "allowed_asgs" and "actual_asgs" -- traverse
 # allowed_asgs, and delete it from actual_asgs -- this should yield a list
 # of ASGs that need to be removed (in actual_asgs).
 
 delete_asgs = list(set(actual_list) - set(configured_list))
-print("to delete:", json.dumps(delete_asgs, indent=2))
+if not args.delete:
+    print("should delete:", json.dumps(delete_asgs, indent=2))
+else:
+    print("delete:", json.dumps(delete_asgs, indent=2))
