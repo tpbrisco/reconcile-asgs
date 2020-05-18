@@ -55,6 +55,9 @@ def cf_refresh(config):
 
 # for debugging, export PYTHONWARNINGS="ignore:Unverified HTTPS request"
 should_verify = False
+if not should_verify:
+    import urllib3
+    urllib3.disable_warnings()
 
 
 def get_sgs(base_url, headers):
@@ -70,14 +73,38 @@ def get_sgs(base_url, headers):
         next_page = False
         sgs_r = r.json()
         for res in sgs_r['resources']:
-            sgs.append(res['entity']['name'])
+            # get globally bound security groups only
+            if (res['entity']['running_default'] is True) or \
+               (res['entity']['staging_default'] is True):
+                sgs.append(res['entity']['name'])
         if sgs_r['next_url']:
             r = s.get(sgs_r['next_url'])
             next_page = True
     return sgs
 
 
+def delete_sgs(base_url, headers, sgs):
+    '''delete_sgs(base_url http string, auth dict, sgs list of names) -- delete list of ASGs'''
+    s = requests.Session()
+    s.headers.update({'Content-Type': 'application/json',
+                      'Accept': 'application/json'})
+    s.headers.update(headers)
+    for del_sg in sgs:
+        # get GUID first
+        sg_r = s.get(base_url + "/v2/security_groups", verify=should_verify,
+                        params={'q': "name:%s" % (del_sg)})
+        sg_detail = sg_r.json()
+        for r in sg_detail['resources']:
+            # assume only one
+            sgs_name = r['entity']['name']
+            sgs_guid = r['metadata']['guid']
+            print("deleting %s / %s" % (sgs_name, sgs_guid))
+            s.delete(base_url + "/v2/security_groups/%s" % (sgs_guid),
+                     verify=should_verify)
+
+
 allowed_asgs = list()
+
 
 def add_file(filename):
     '''read a <group>.json file for allowed security group'''
@@ -139,3 +166,7 @@ if not args.delete:
     print("should delete:", json.dumps(delete_asgs, indent=2))
 else:
     print("delete:", json.dumps(delete_asgs, indent=2))
+    auth_refresh = cf_refresh(config)
+    headers = {'Authorization': "%s %s" % (auth_refresh['token_type'],
+                                           auth_refresh['access_token'])}
+    delete_sgs(config['Target'], headers, delete_asgs)
