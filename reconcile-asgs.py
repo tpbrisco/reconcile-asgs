@@ -23,6 +23,13 @@ import argparse
 import time
 
 
+# for debugging, export PYTHONWARNINGS="ignore:Unverified HTTPS request"
+should_verify = False
+if not should_verify:
+    import urllib3
+    urllib3.disable_warnings()
+
+
 class ASGException(Exception):
     def __init__(self, message):
         super().__init__(message)
@@ -45,19 +52,12 @@ def cf_refresh(config):
                                 'grant_type': 'refresh_token',
                                 'client_id': 'cf'},
                             auth=('cf', ''),
-                            verify=False)
+                            verify=should_verify)
     if not oauth_r.ok:
         print("error in token refresh:", oauth_r.json()['error_description'],
               file=sys.stderr)
-        os.exit(1)
+        sys.exit(1)
     return oauth_r.json()
-
-
-# for debugging, export PYTHONWARNINGS="ignore:Unverified HTTPS request"
-should_verify = False
-if not should_verify:
-    import urllib3
-    urllib3.disable_warnings()
 
 
 def get_sgs(base_url, headers):
@@ -107,7 +107,7 @@ allowed_asgs = list()
 
 
 def add_file(filename):
-    '''read a <group>.json file for allowed security group.
+    '''read a <group>.yml file for allowed security group.
     One security group per file.'''
     with open(filename, 'r') as f:
         new_sg = yaml.safe_load(f)
@@ -118,7 +118,7 @@ def add_file(filename):
 
 
 # get list of security groups configured from command line
-parser = argparse.ArgumentParser(prog='reconcile-ags',
+parser = argparse.ArgumentParser(prog='reconcile-asg',
                                  description='reconcile ASGs against inventory')
 parser.add_argument('-d', '--delete',
                     action='store_true',
