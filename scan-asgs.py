@@ -4,7 +4,7 @@
 #           [-s/--skip <asg name>]
 #           [-r/--skip-re <asg name regular expression>]
 #           [-n/--network <banned network>]
-#           [-m/--min-cidr <minimum CIDR length]
+#           [-m/--min-cidr <minimum CIDR length (default 22)]
 # outputs: list of security groups in the foundation that dont pass
 # the check_policy.
 #
@@ -152,7 +152,7 @@ parser.add_argument('-m', '--min-cidr',
                     action='store',
                     type=int,
                     default=22,
-                    help='minimum cidr length allowable')
+                    help='minimum cidr length allowable (default 22)')
 args = parser.parse_args()
 
 # set up configuration for API
