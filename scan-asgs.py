@@ -162,7 +162,9 @@ headers = {
     'Authorization': auth_refresh['token_type'] +
     ' ' + auth_refresh['access_token']}
 
-# convert/compress networks into ipaddress format
+# convert/compress networks into ipaddress format; note that we parse
+# ranges as well, otherwise we could just use argparse
+# type=ipaddress.ip_network
 if args.network is not None:
     print("args.network:", args.network)
     banned_networks = compile_networks(args.network)
