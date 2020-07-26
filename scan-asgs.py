@@ -166,7 +166,6 @@ headers = {
 # ranges as well, otherwise we could just use argparse
 # type=ipaddress.ip_network
 if args.network is not None:
-    print("args.network:", args.network)
     banned_networks = compile_networks(args.network)
     if args.debug:
         print("Networks:", banned_networks)
