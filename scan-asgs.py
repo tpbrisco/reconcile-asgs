@@ -77,7 +77,7 @@ def compile_networks(nets):
     return ip_n
 
 
-def sg_network_in_policy(sg, args, banned_networks):
+def sg_network_in_policy(sg, args):
     '''check_network_policy(json ASG entity) - validate network policy'''
     # check for exceptions to policy
     if args.skip is not None and sg['name'] in args.skip:
@@ -100,7 +100,7 @@ def sg_network_in_policy(sg, args, banned_networks):
                       (sg['name'], ip_n, args.min_cidr))
             return False
         # no referring to banned networks
-        for banned in banned_networks:
+        for banned in args.banned_networks:
             if ip_n.overlaps(banned):
                 if args.debug:
                     print("%s rule %s fails banned nets" %
@@ -167,10 +167,14 @@ headers = {
 # type=ipaddress.ip_network
 if args.network is not None:
     banned_networks = compile_networks(args.network)
+    args.banned_networks = banned_networks
     if args.debug:
         print("Networks:", banned_networks)
 else:
-    banned_networks = list()
+    args.banned_networks = None
+if args.skip is not None:
+    if args.debug:
+        print("Skip groups:", args.skip)
 
 # get all application security groups
 asg_get_start = time.time()
@@ -182,7 +186,7 @@ fail_check_start = time.time()
 failing_asgs = list()
 fail_check_end = time.time()
 for sg in all_asgs:
-    if not sg_network_in_policy(sg, args, banned_networks):
+    if not sg_network_in_policy(sg, args):
         failing_asgs.append(sg)
 
 if args.debug:
