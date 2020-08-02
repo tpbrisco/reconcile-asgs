@@ -139,10 +139,10 @@ parser.add_argument('-D', '--debug',
                     action='store_true',
                     default=False,
                     help='enable debug messages')
-parser.add_argument('-s', '--skip-re',
+parser.add_argument('-r', '--skip-re',
                     action='append',
                     help='regular expression for policy names to skip')
-parser.add_argument('-S', '--skip',
+parser.add_argument('-s', '--skip',
                     action='append',
                     help='ASG names to skip policy enforcement')
 parser.add_argument('-n', '--network',
