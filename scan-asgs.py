@@ -24,6 +24,7 @@ import json
 import argparse
 import time
 import ipaddress
+import re
 
 should_verify = False
 if not should_verify:
@@ -82,6 +83,10 @@ def sg_network_in_policy(sg, args):
     # check for exceptions to policy
     if args.skip is not None and sg['name'] in args.skip:
         return True
+    if args.skip_re is not None:
+        for r in args.skip_rec:
+            if r.match(sg['name']):
+                return True
     # collect all addresses, and apply policy to them in aggregate
     ip_n_list = list()
     for sg_rule in sg['rules']:
@@ -100,12 +105,13 @@ def sg_network_in_policy(sg, args):
                       (sg['name'], ip_n, args.min_cidr))
             return False
         # no referring to banned networks
-        for banned in args.banned_networks:
-            if ip_n.overlaps(banned):
-                if args.debug:
-                    print("%s rule %s fails banned nets" %
-                          (sg['name'], ip_n))
-                return False
+        if args.network is not None:
+            for banned in args.banned_networks:
+                if ip_n.overlaps(banned):
+                    if args.debug:
+                        print("%s rule %s fails banned nets" %
+                              (sg['name'], ip_n))
+                    return False
     return True  # network policy passed
 
 
@@ -170,11 +176,17 @@ if args.network is not None:
     args.banned_networks = banned_networks
     if args.debug:
         print("Networks:", banned_networks)
-else:
-    args.banned_networks = None
+
 if args.skip is not None:
     if args.debug:
         print("Skip groups:", args.skip)
+if args.skip_re is not None:
+    args.skip_rec = list()
+    for r in args.skip_re:
+        p = re.compile(r)
+        args.skip_rec.append(p)
+    if args.debug:
+        print("Skip regexs:", args.skip_re)
 
 # get all application security groups
 asg_get_start = time.time()
