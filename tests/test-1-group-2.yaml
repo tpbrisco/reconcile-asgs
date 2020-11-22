@@ -1,4 +1,6 @@
 policy_name: test-1-group-2
+running_default: True
+staging_default: True
 rules:
   - destination: "192.168.14.0/24"
     log: true

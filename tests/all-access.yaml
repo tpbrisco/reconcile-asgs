@@ -1,4 +1,6 @@
 policy_name: all_access
+running_default: True
+staging_default: True
 rules:
   - destination: "0.0.0.0/0"
     protocol: "all"

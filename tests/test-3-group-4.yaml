@@ -1,0 +1,8 @@
+policy_name: test-3-group-4
+running_default: False
+staging_default: True
+rule:
+  - destination: "10.0.11.0/24"
+    log: false
+    ports: "80, 443"
+    protocol: "tcp"

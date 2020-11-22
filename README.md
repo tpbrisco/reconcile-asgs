@@ -13,8 +13,23 @@ in the defined list of valid ASGs.  I.e. it "diffs" between the
 intended state (the list of ASGs from the YAML files) and the running
 environment.
 
-Note: it (currently) does not inspect the *content* of the security
-groups, only the names.
+reconcile-asgs validates the defined ASGs against the running/staging
+global groups -- that is; if groups are defined as default-running or
+default-staging, it will reconcile those against the listed ASG
+definitions.
+
+Note: it (currently) does not inspect the *rules* of the security
+groups, only the names and whether it is globally bound for running or
+staging time by default.
+
+Note: it (currently) struggles with ASGs globally defined - but not
+bound to runtime/staging-time at all.  If a group is defined, but not
+assigned to either of these, this will not recognize it as something
+that needs deleting.  (In order to detect these, reconcile-asgs would
+have to enumerate all the security groups on the system, looking for
+ones with no runtime/stagetime/org-space associations; this
+could/would be prohibitively expensive on a large system with many
+groups).
 
 ## Syntax
 ```
@@ -40,8 +55,8 @@ Tests contains a series of security group definitions that are "valid"
 existing environment.
 
 ## directory data
-Data for tests -- running the gen-test.sh script will populate sample
-data against which you may test
+Data for tests -- running the test-create-sgs.sh script will populate
+sample data against which you may test.
 
 ## Example Usage
 The requirements.txt contains dependent packages -- this may be used
@@ -56,3 +71,10 @@ The below will do a "dry run" - indicating which ASGs would be deleted
 ```
 % python reconcile-asgs.py -D tests/*
 ```
+
+## Example Testing
+A testing script (test-create-sgs.sh) will create a set of semi-bogus
+security groups which can then be "reconciled".  The script attempts
+to cover valid use-cases.  It creates all the tests/test-*.yaml
+security groups (and modifies a few), so reconcile-asgs can be used to
+update/reconcile all those new groups.
