@@ -170,56 +170,6 @@ def delete_sgs(enforcing, base_url, headers, sgs):
                         del_sg, dr.url))
 
 
-# dead routine - will delete after full testing
-def normalize_asg(base_url, headers, target, actual, actual_guid):
-    '''normalize_asg(base_url http string, auth dict, target bindings,
-actual data -- fix an ASG'''
-    s = requests.Session()
-    s.headers.update({'Content-Type': 'application/json',
-                      'Accept': 'application/json'})
-    s.headers.update(headers)
-    print("target:%s stage:%s run:%s actual stage:%s run:%s" % (
-        target['name'], target['staging_default'], target['running_default'],
-        actual['staging_default'], actual['running_default']))
-    # since there's no "unset a security group as default for ...
-    # we instead delete the old rule, and recreate it with the proper
-    # bindings
-    if target['name'] != actual['name']:
-        return  # we have a mismatched pair?
-    if target['staging_default'] == actual['staging_default'] and \
-       target['running_default'] == actual['running_default']:
-        return  # we have the same settings?
-
-    if not target['staging_default'] and actual['staging_default']:
-        sg_r = s.delete(base_url + "/v2/config/staging_security_groups/%s" % (
-            actual_guid), verify=should_verify)
-        if not sg_r.ok:
-            raise ASGException(
-                'normalize_asg: error unbinding staging default %s: %s' % (
-                    target['name'], sg_r.text))
-    if target['staging_default'] and not actual['staging_default']:
-        sg_r = s.put(base_url + "/v2/config/staging_security_groups/%s" % (
-            actual_guid), verify=should_verify)
-        if not sg_r.ok:
-            raise ASGException(
-                'normalize_asg: error binding staging default %s: %s' % (
-                    target['name'], sg_r.text))
-    if not target['running_default'] and actual['running_default']:
-        sg_r = s.delete(base_url + "/v2/config/running_security_groups/%s" % (
-            actual_guid), verify=should_verify)
-        if not sg_r.ok:
-            raise ASGException(
-                'normalize_asg: error unbinding running default %s: %s' % (
-                    target['name'], sg_r.text))
-    if target['running_default'] and not actual['running_default']:
-        sg_r = s.put(base_url + "/v2/config/running_security_groups/%s" % (
-            actual_guid), verify=should_verify)
-        if not sg_r.ok:
-            raise ASGException(
-                'normalize_asg: error binding running default %s: %s' % (
-                    target['name'], sg_r.text))
-
-
 def unbind_staging(enforcing, base_url, headers, ubs_sg):
     '''unbind_staging(base_url http string, auth dict, ubs_sg names) --
 unbind default staging ASG'''
@@ -241,7 +191,6 @@ unbind default staging ASG'''
         message(args.json,
                 'unbind_staging', {'name': sgs_name, 'guid': sgs_guid})
         # print("unbind_staging %s %s" % (sgs_name, sgs_guid))
-        # normalize_asg(base_url, headers, ubs_sg, r['entity'], sgs_guid)
         if enforcing:
             sg_r = s.delete(base_url + '/v2/config/staging_security_groups/%s' % (
                 sgs_guid), verify=should_verify)
@@ -299,7 +248,6 @@ unbind default running ASG'''
         message(args.json,
                 'unbind_running', {'name': sgs_name, 'guid': sgs_guid})
         # print("unbind_running %s / %s" % (sgs_name, sgs_guid))
-        # normalize_asg(base_url, headers, ubr_sg, r['entity'], sgs_guid)
         if enforcing:
             sg_r = s.delete(base_url + "/v2/config/running_security_groups/%s" % (
                 sgs_guid), verify=should_verify)
