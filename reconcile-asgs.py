@@ -161,7 +161,6 @@ def delete_sgs(enforcing, base_url, headers, sgs):
             sgs_name = r['entity']['name']
             sgs_guid = r['metadata']['guid']
             message(args.json, 'deleted', {'name': sgs_name, 'guid': sgs_guid})
-            # print("deleting %s / %s" % (sgs_name, sgs_guid))
             if enforcing:
                 dr = s.delete(base_url + "/v2/security_groups/%s" % (sgs_guid),
                               verify=should_verify)
@@ -190,7 +189,6 @@ unbind default staging ASG'''
         sgs_guid = r['metadata']['guid']
         message(args.json,
                 'unbind_staging', {'name': sgs_name, 'guid': sgs_guid})
-        # print("unbind_staging %s %s" % (sgs_name, sgs_guid))
         if enforcing:
             sg_r = s.delete(base_url + '/v2/config/staging_security_groups/%s' % (
                 sgs_guid), verify=should_verify)
@@ -218,7 +216,6 @@ def bind_staging(enforcing, base_url, headers, bs_sg):
         sgs_guid = r['metadata']['guid']
         message(args.json,
                 'bind_staging', {'name': sgs_name, 'guid': sgs_guid})
-        # print("bind_staging %s %s" % (sgs_name, sgs_guid))
         if enforcing:
             sg_r = s.put(base_url + '/v2/config/staging_security_groups/%s' % (
                 sgs_guid), verify=should_verify)
@@ -247,7 +244,6 @@ unbind default running ASG'''
         sgs_guid = r['metadata']['guid']
         message(args.json,
                 'unbind_running', {'name': sgs_name, 'guid': sgs_guid})
-        # print("unbind_running %s / %s" % (sgs_name, sgs_guid))
         if enforcing:
             sg_r = s.delete(base_url + "/v2/config/running_security_groups/%s" % (
                 sgs_guid), verify=should_verify)
@@ -275,7 +271,6 @@ bind default running ASG'''
         sgs_guid = r['metadata']['guid']
         message(args.json,
                 'bind_running', {'name': sgs_name, 'guid': sgs_guid})
-        # print("bind_running %s / %s" % (sgs_name, sgs_guid))
         if enforcing:
             sg_r = s.put(base_url + "/v2/config/running_security_groups/%s" % (
                 sgs_guid), verify=should_verify)
