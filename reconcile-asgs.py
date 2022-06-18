@@ -67,6 +67,39 @@ def cf_refresh(config):
     return oauth_r.json()
 
 
+# accrued message
+__output_message = {}
+
+
+def message(format, type, data):
+    '''message(format="text", type, data) - print/collect possibly json formatted messages'''
+    # print("format={} type={} data={}".format(format, type, json.dumps(data)))
+    if not format:
+        print("would {}: {}".format(type, json.dumps(data, indent=2)))
+        return
+    # check message types
+    if type not in ['deleted',
+                    'unbind_staging', 'bind_staging',
+                    'unbind_running', 'bind_running']:
+        print("erorr in message type {}: unknown type".format(type),
+              file=sys.stderr)
+        sys.exit(1)
+    if type in __output_message:
+        __output_message[type]['groups'].append(data.copy())
+    else:
+        __output_message[type] = {'groups': [data.copy()]}
+
+
+def dump_message(format, run_mode):
+    if not format:
+        return
+    if run_mode:
+        run_msg = 'executing'
+    else:
+        run_msg = 'advising'
+    print(json.dumps({'mode': run_msg, 'data': __output_message}, indent=2))
+
+
 def get_running_asgs(base_url, headers):
     return get_global_sgs(base_url,
                           '/v2/config/running_security_groups',
@@ -108,7 +141,7 @@ def get_global_sgs(base_url, runorstage, headers):
     return sgs
 
 
-def delete_sgs(base_url, headers, sgs):
+def delete_sgs(enforcing, base_url, headers, sgs):
     '''delete_sgs(base_url http string, auth dict, sgs list of names)
  -- delete list of ASGs'''
     s = requests.Session()
@@ -127,13 +160,14 @@ def delete_sgs(base_url, headers, sgs):
             # assume only one
             sgs_name = r['entity']['name']
             sgs_guid = r['metadata']['guid']
-            dr = s.delete(base_url + "/v2/security_groups/%s" % (sgs_guid),
-                          verify=should_verify)
-            if not dr.ok:
-                raise ASGException('delete_sgs {0} fails {1}'.format(
-                    del_sg, dr.url))
-            else:
-                print("deleting %s / %s" % (sgs_name, sgs_guid))
+            message(args.json, 'deleted', {'name': sgs_name, 'guid': sgs_guid})
+            # print("deleting %s / %s" % (sgs_name, sgs_guid))
+            if enforcing:
+                dr = s.delete(base_url + "/v2/security_groups/%s" % (sgs_guid),
+                              verify=should_verify)
+                if not dr.ok:
+                    raise ASGException('delete_sgs {0} fails {1}'.format(
+                        del_sg, dr.url))
 
 
 # dead routine - will delete after full testing
@@ -186,7 +220,7 @@ actual data -- fix an ASG'''
                     target['name'], sg_r.text))
 
 
-def unbind_staging(base_url, headers, ubs_sg):
+def unbind_staging(enforcing, base_url, headers, ubs_sg):
     '''unbind_staging(base_url http string, auth dict, ubs_sg names) --
 unbind default staging ASG'''
     s = requests.Session()
@@ -204,16 +238,19 @@ unbind default staging ASG'''
         # assume only one?
         sgs_name = r['entity']['name']
         sgs_guid = r['metadata']['guid']
-        print("unbind_staging %s %s" % (sgs_name, sgs_guid))
+        message(args.json,
+                'unbind_staging', {'name': sgs_name, 'guid': sgs_guid})
+        # print("unbind_staging %s %s" % (sgs_name, sgs_guid))
         # normalize_asg(base_url, headers, ubs_sg, r['entity'], sgs_guid)
-        sg_r = s.delete(base_url + '/v2/config/staging_security_groups/%s' % (
-            sgs_guid), verify=should_verify)
-        if not sg_r.ok:
-            raise ASGException('unbind_staging: error unbinding ASG %s: %s' %
-                               (ubs_sg['name'], sg_r.text))
+        if enforcing:
+            sg_r = s.delete(base_url + '/v2/config/staging_security_groups/%s' % (
+                sgs_guid), verify=should_verify)
+            if not sg_r.ok:
+                raise ASGException('unbind_staging: error unbinding ASG %s: %s' %
+                                   (ubs_sg['name'], sg_r.text))
 
 
-def bind_staging(base_url, headers, bs_sg):
+def bind_staging(enforcing, base_url, headers, bs_sg):
     '''bind_staging(base_url http string, auth dict, bs_sg string sg name)
 -- bind default staging ASG'''
     s = requests.Session()
@@ -230,15 +267,18 @@ def bind_staging(base_url, headers, bs_sg):
     for r in sg_detail['resources']:
         sgs_name = r['entity']['name']
         sgs_guid = r['metadata']['guid']
-        print("bind_staging %s %s" % (sgs_name, sgs_guid))
-        sg_r = s.put(base_url + '/v2/config/staging_security_groups/%s' % (
-            sgs_guid), verify=should_verify)
-        if not sg_r.ok:
-            raise ASGException('bind_staging: error binding ASG %s: %s' %
-                               (bs_sg['name'], sg_r.text))
+        message(args.json,
+                'bind_staging', {'name': sgs_name, 'guid': sgs_guid})
+        # print("bind_staging %s %s" % (sgs_name, sgs_guid))
+        if enforcing:
+            sg_r = s.put(base_url + '/v2/config/staging_security_groups/%s' % (
+                sgs_guid), verify=should_verify)
+            if not sg_r.ok:
+                raise ASGException('bind_staging: error binding ASG %s: %s' %
+                                   (bs_sg['name'], sg_r.text))
 
 
-def unbind_running(base_url, headers, ubr_sg):
+def unbind_running(enforcing, base_url, headers, ubr_sg):
     '''unbind_running(base_url http string, auth dict, ubr_sg name) --
 unbind default running ASG'''
     s = requests.Session()
@@ -256,16 +296,19 @@ unbind default running ASG'''
         # assume only one?
         sgs_name = r['entity']['name']
         sgs_guid = r['metadata']['guid']
-        print("unbind_running %s / %s" % (sgs_name, sgs_guid))
+        message(args.json,
+                'unbind_running', {'name': sgs_name, 'guid': sgs_guid})
+        # print("unbind_running %s / %s" % (sgs_name, sgs_guid))
         # normalize_asg(base_url, headers, ubr_sg, r['entity'], sgs_guid)
-        sg_r = s.delete(base_url + "/v2/config/running_security_groups/%s" % (
-            sgs_guid), verify=should_verify)
-        if not sg_r.ok:
-            raise ASGException('unbind_running: error unbinding ASG %s: %s' %
-                               (ubr_sg['name'], sg_r.text))
+        if enforcing:
+            sg_r = s.delete(base_url + "/v2/config/running_security_groups/%s" % (
+                sgs_guid), verify=should_verify)
+            if not sg_r.ok:
+                raise ASGException('unbind_running: error unbinding ASG %s: %s' %
+                                   (ubr_sg['name'], sg_r.text))
 
 
-def bind_running(base_url, headers, br_sg):
+def bind_running(enforcing, base_url, headers, br_sg):
     '''bind_running(base_url http string, auth dict, br_sg name) --
 bind default running ASG'''
     s = requests.Session()
@@ -282,12 +325,15 @@ bind default running ASG'''
     for r in sg_detail['resources']:
         sgs_name = r['entity']['name']
         sgs_guid = r['metadata']['guid']
-        print("bind_running %s / %s" % (sgs_name, sgs_guid))
-        sg_r = s.put(base_url + "/v2/config/running_security_groups/%s" % (
-            sgs_guid), verify=should_verify)
-        if not sg_r.ok:
-            raise ASGException('bind_running: error binding ASG %s: %s' %
-                               (br_sg['name'], sg_r.text))
+        message(args.json,
+                'bind_running', {'name': sgs_name, 'guid': sgs_guid})
+        # print("bind_running %s / %s" % (sgs_name, sgs_guid))
+        if enforcing:
+            sg_r = s.put(base_url + "/v2/config/running_security_groups/%s" % (
+                sgs_guid), verify=should_verify)
+            if not sg_r.ok:
+                raise ASGException('bind_running: error binding ASG %s: %s' %
+                                   (br_sg['name'], sg_r.text))
 
 
 def add_file(filename):
@@ -323,6 +369,10 @@ parser.add_argument('-D', '--debug',
                     action='store_true',
                     default=False,
                     help='enable debugging messages')
+parser.add_argument('-j', '--json',
+                    action='store_true',
+                    default=False,
+                    help='messages in json format')
 parser.add_argument('file', nargs='*', help='list of files')
 args = parser.parse_args()
 
@@ -363,20 +413,17 @@ start = time.time()
 actual_list = dict(actual_running_list, **actual_staging_list)
 delete_asg_names = list(set(actual_list.keys()) -
                         set(configured_list.keys()))
-# delete security groups that shouldn't be there
-if args.delete:
-    print("to delete:", json.dumps(delete_asg_names, indent=2))
-    auth_refresh = cf_refresh(config)
-    headers = {'Authorization': "%s %s" % (auth_refresh['token_type'],
-                                           auth_refresh['access_token'])}
-    delete_sgs(config['Target'], headers, delete_asg_names)
-# remove from list of names, so we dont keep scanning them
+# delete security groups that shouldn't be there, use "args.delete"
+# to determine whether to actually delete
+auth_refresh = cf_refresh(config)
+headers = {'Authorization': "%s %s" % (auth_refresh['token_type'],
+                                       auth_refresh['access_token'])}
+delete_sgs(args.delete, config['Target'], headers, delete_asg_names)
+
+# remove deleted from list of names, so we dont keep scanning them
 for d in delete_asg_names:
-    if not args.delete:
-        print("should delete:", d)
-    else:
-        print("deleting", d)
-        del actual_list[d]
+    del actual_list[d]
+
 end = time.time()
 if args.debug:
     print("delete ASG names (%.02fsec) %d entries" % (
@@ -390,33 +437,22 @@ for cfgd_name in configured_list.keys():
         print("checking bindings for", cfgd_name)
     if configured_list[cfgd_name]['running_default'] is False and \
        cfgd_name in actual_running_list:
-        if not args.delete:
-            print("should unbind_running:", cfgd_name)
-        else:
-            unbind_running(config['Target'], headers,
-                           configured_list[cfgd_name])
+        unbind_running(args.delete, config['Target'], headers,
+                       configured_list[cfgd_name])
     if configured_list[cfgd_name]['running_default'] is True and \
        cfgd_name not in actual_running_list:
-        if not args.delete:
-            print("should bind_running:", cfgd_name)
-        else:
-            bind_running(config['Target'], headers,
-                         configured_list[cfgd_name])
+        bind_running(args.delete, config['Target'], headers,
+                     configured_list[cfgd_name])
     if configured_list[cfgd_name]['staging_default'] is False and \
        cfgd_name in actual_staging_list:
-        if not args.delete:
-            print("should unbind_staging:", cfgd_name)
-        else:
-            unbind_staging(config['Target'], headers,
-                           configured_list[cfgd_name])
+        unbind_staging(args.delete, config['Target'], headers,
+                       configured_list[cfgd_name])
     if configured_list[cfgd_name]['staging_default'] is True and \
        cfgd_name not in actual_staging_list:
-        if not args.delete:
-            print("should bind_staging:", cfgd_name)
-        else:
-            bind_staging(config['Target'], headers,
-                         configured_list[cfgd_name])
+        bind_staging(args.delete, config['Target'], headers,
+                     configured_list[cfgd_name])
 end = time.time()
 if args.debug:
     print("reconcile ASG bindings (%.02fsec) %d entries" % (
         (end - start), len(configured_list)))
+dump_message(args.json, args.delete)
