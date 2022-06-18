@@ -1,0 +1,6 @@
+policy_name: load_balancer
+running_default: True
+staging_default: True
+rules:
+  - destination: 10.244.0.34
+    protocol: all

@@ -1,0 +1,10 @@
+policy_name: dns
+running_default: true
+staging_default: true
+rules:
+  - destination: "0.0.0.0/0"
+    ports: "53"
+    protocol: "tcp"
+  - destination: "0.0.0.0/0"
+    ports: "53"
+    protocol: "udp"

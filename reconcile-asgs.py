@@ -216,7 +216,6 @@ unbind default staging ASG'''
 def bind_staging(base_url, headers, bs_sg):
     '''bind_staging(base_url http string, auth dict, bs_sg string sg name)
 -- bind default staging ASG'''
-    print("TO DO: bind_staging")
     s = requests.Session()
     s.headers.update({'Content-Type': 'application/json',
                       'Accept': 'application/json'})
@@ -268,8 +267,7 @@ unbind default running ASG'''
 
 def bind_running(base_url, headers, br_sg):
     '''bind_running(base_url http string, auth dict, br_sg name) --
-bind default running AsG'''
-    print("TO DO: bind_running")
+bind default running ASG'''
     s = requests.Session()
     s.headers.update({'Content-Type': 'application/json',
                       'Accept': 'application/json'})
@@ -388,7 +386,8 @@ if args.debug:
 # that the bindings (staging, running, staging+running) is correct
 start = time.time()
 for cfgd_name in configured_list.keys():
-    print("checking bindings for", cfgd_name)
+    if args.debug:
+        print("checking bindings for", cfgd_name)
     if configured_list[cfgd_name]['running_default'] is False and \
        cfgd_name in actual_running_list:
         if not args.delete:
